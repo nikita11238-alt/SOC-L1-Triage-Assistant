@@ -2,36 +2,43 @@
 A lightweight tool for rapid log analysis and incident triage report generation.
 
 ## Requirements
-- Python 3.x (check: `python3 --version`)
+- Python 3.x (check: `python3 --version` or `py --version` on Windows)
 
 ## Quick Start
-1. Copy the `SOC_L1_Triage_Assistant/` folder wherever you want
+1. Clone or download this repository
 2. Place your log files into the `logs/` folder
 3. Run:
 
+**Linux / macOS:**
 ```bash
-chmod +x scripts/run.sh   # once
-./scripts/run.sh
+chmod +x run.sh
+./run.sh
 ```
 
 **Windows:**
 ```
-scripts\run.bat
+run.bat
 ```
 
-4. Check the result in `output/final_report.txt`
+4. Check the result in `output/final_report.txt` — it opens automatically
 
 ## Structure
 ```
-SOC_L1_Triage_Assistant/
-├── logs/           ← place your .log files here
-├── output/         ← analysis results
-│   ├── events.txt       — suspicious lines found
-│   ├── event_counts.txt — top repeated events
-│   ├── iocs.txt         — IPs and usernames
-│   ├── severity.txt     — threat level (LOW/MEDIUM/HIGH)
-│   └── final_report.txt — final SOC report
-└── scripts/        ← do not modify
+SOC-L1-Triage-Assistant/
+├── logs/                ← place your .log files here
+├── output/              ← analysis results
+│   ├── events.txt            — suspicious lines found
+│   ├── event_counts.txt      — top repeated events
+│   ├── iocs.txt              — IPs and usernames
+│   ├── severity.txt          — threat level (LOW/MEDIUM/HIGH)
+│   ├── final_report.txt      — final SOC report
+│   └── archive/              — previous reports (auto-saved)
+├── triage.py
+├── severity.py
+├── report.py
+├── ai_explainer.py
+├── run.sh
+└── run.bat
 ```
 
 ## What it detects
@@ -60,4 +67,5 @@ SOC_L1_Triage_Assistant/
 ## Disclaimer
 This tool is rule-based — not a SIEM replacement. Always review raw logs manually before taking action.
 
-## License MIT
+## License
+MIT
