@@ -1,5 +1,0 @@
-[AutoRun]
-label=SOC L1 Triage Assistant
-open=SOC_L1_Triage_Assistant\scripts\run.bat
-icon=SOC_L1_Triage_Assistant\scripts\run.bat
-action=Запустить SOC Triage Assistant
