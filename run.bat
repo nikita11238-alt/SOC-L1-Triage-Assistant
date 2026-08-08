@@ -6,7 +6,7 @@ echo    SOC L1 Triage Assistant
 echo ===============================
 echo.
 
-:: Определяем как запускать Python - python или py
+:: Determine how to run Python - python or py
 set PYTHON=
 python --version >nul 2>&1
 if not errorlevel 1 set PYTHON=python
