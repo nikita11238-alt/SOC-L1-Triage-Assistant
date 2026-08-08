@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-report.py — генерация отчёта
-Fixes:
-  - Не теряет события молча (показывает сколько обрезано)
-  - Бэкап предыдущего отчёта (не перезаписывает)
-  - Читает scoring breakdown из severity.txt
-  - Добавляет статистику из event_counts.txt
+report.py - Report generation
+Updates:
+  - Prevents silent event loss (shows how much was truncated)
+  - Backs up the previous report (prevents overwriting)
+  - Reads scoring breakdown from severity.txt
+  - Adds statistics from event_counts.txt
 """
 import os
 import shutil
@@ -19,12 +19,12 @@ OUT_COUNTS   = os.path.join(BASE_DIR, "output", "event_counts.txt")
 OUT_REPORT   = os.path.join(BASE_DIR, "output", "final_report.txt")
 ARCHIVE_DIR  = os.path.join(BASE_DIR, "output", "archive")
 
-# --- Бэкап предыдущего отчёта ---
+# --- Backup previous report ---
 if os.path.exists(OUT_REPORT):
     os.makedirs(ARCHIVE_DIR, exist_ok=True)
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     shutil.copy(OUT_REPORT, os.path.join(ARCHIVE_DIR, f"final_report_{ts}.txt"))
-    print(f"    Предыдущий отчёт сохранён в output/archive/")
+    print(f"    Previous report saved to output/archive/")
 
 with open(OUT_EVENTS,   encoding="utf-8") as f: events_raw   = f.read()
 with open(OUT_IOC,      encoding="utf-8") as f: iocs         = f.read()
@@ -33,14 +33,14 @@ with open(OUT_COUNTS,   encoding="utf-8") as f: counts       = f.read()
 
 severity_level = severity_raw.splitlines()[0].strip()
 
-# --- Показываем события, честно обрезаем ---
+# --- Display events, truncate explicitly ---
 MAX_CHARS   = 3000
 events_show = events_raw[:MAX_CHARS]
 total_chars = len(events_raw)
 truncated   = total_chars > MAX_CHARS
 trunc_note  = (
-    f"\n... [Показано {MAX_CHARS} из {total_chars} символов. "
-    f"Полный список: output/events.txt]\n"
+    f"\n... [Showing {MAX_CHARS} of {total_chars} characters. "
+    f"Full list in: output/events.txt]\n"
     if truncated else ""
 )
 
@@ -96,4 +96,4 @@ with open(OUT_REPORT, "w", encoding="utf-8") as f:
 
 print(f"[+] Report generated → output/final_report.txt")
 if truncated:
-    print(f"    [!] Events обрезаны: показано {MAX_CHARS} из {total_chars} символов")
+    print(f"    [!] Events truncated: showing {MAX_CHARS} of {total_chars} characters")
