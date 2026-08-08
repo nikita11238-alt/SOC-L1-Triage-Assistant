@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
 ai_explainer.py
-Fixes:
-  - Честный дисклеймер: это НЕ AI, это правила
-  - Не дописывает дважды при повторном запуске (перезаписывает секцию)
-  - Расширенные объяснения по уровням
+Updates:
+  - Disclaimer: this is NOT AI, but rule-based logic
+  - Prevents duplicate entries on consecutive runs (overwrites the section)
+  - Expanded explanations for severity levels
 """
 import os
 import re
@@ -50,13 +50,13 @@ assessments = {
 
 text = assessments.get(severity, f"Unknown severity level: {severity}")
 
-# Читаем отчёт и заменяем секцию если она уже есть (не дублируем)
+# Read the report and replace the section if it already exists (prevents duplication)
 with open(OUT_REPORT, "r", encoding="utf-8") as f:
     report = f.read()
 
 SECTION_MARKER = "\n=== AUTOMATED ASSESSMENT ===\n"
 
-# Убираем старую секцию если есть
+# Remove the old section if it exists
 if SECTION_MARKER in report:
     report = report[:report.index(SECTION_MARKER)]
 
