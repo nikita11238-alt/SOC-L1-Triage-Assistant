@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-severity.py — оценка серьёзности
-Fixes:
-  - Учитывает временны́е паттерны (burst vs медленный перебор)
-  - Учитывает контекст: системные failed != auth failed
-  - Расширены правила scoring
+severity.py — severity assessment
+Updates:
+  - Considers temporal patterns (burst vs slow enumeration)
+  - Considers context: system-level failed != auth failed
+  - Expanded scoring rules
 """
 import os
 import re
@@ -20,9 +20,9 @@ with open(OUT_EVENTS, encoding="utf-8") as f:
 lines = raw.splitlines()
 events_lower = raw.lower()
 
-# --- Извлекаем счётчики повторений из формата [xN] ---
+# --- Extract repeat counters from [xN] format ---
 def total_occurrences(pattern, text):
-    """Считает вхождения с учётом [xN] префиксов."""
+    """Counts occurrences taking [xN] prefixes into account."""
     count = 0
     for line in text.splitlines():
         m = re.match(r'\[x(\d+)\]', line)
@@ -38,13 +38,13 @@ root_attempts  = total_occurrences("for root", raw)
 unauthorized   = total_occurrences("unauthorized", raw)
 denied         = total_occurrences("denied", raw)
 
-# Системные failed (не auth) — низкий вес
+# System-level failed (non-auth) — low weight
 system_failed  = total_occurrences("failed", raw) - auth_failed - invalid_user
 
 score = 0
 reasons = []
 
-# Auth failures — основной сигнал
+# Auth failures — main signal
 if auth_failed > 0:
     score += 2
     reasons.append(f"Auth failures: {auth_failed}")
@@ -55,7 +55,7 @@ if auth_failed > 100:
     score += 2
     reasons.append("Possible brute-force (>100 failures)")
 
-# Invalid user — перебор логинов
+# Invalid user — login enumeration
 if invalid_user > 0:
     score += 2
     reasons.append(f"Invalid user attempts: {invalid_user}")
@@ -63,7 +63,7 @@ if invalid_user > 5:
     score += 1
     reasons.append("Multiple different invalid usernames")
 
-# Привилегии
+# Privileges
 if root_attempts > 0:
     score += 3
     reasons.append(f"Root login attempts: {root_attempts}")
@@ -71,7 +71,7 @@ if sudo_attempts > 0:
     score += 2
     reasons.append(f"Sudo activity: {sudo_attempts}")
 
-# Прочее
+# Other
 if unauthorized > 0:
     score += 1
     reasons.append(f"Unauthorized access events: {unauthorized}")
@@ -79,12 +79,12 @@ if denied > 0:
     score += 1
     reasons.append(f"Access denied events: {denied}")
 
-# Системные failed — низкий вес, не паникуем
+# System-level failed — low weight, no panic
 if system_failed > 0:
     score += 1
     reasons.append(f"System-level failed events (low weight): {system_failed}")
 
-# Итог
+# Final result
 if score >= 8:
     severity = "HIGH"
 elif score >= 4:
