@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """
-report.py - Report generation
+report.py — Report generation
 Updates:
   - Prevents silent event loss (shows how much was truncated)
   - Backs up the previous report (prevents overwriting)
   - Reads scoring breakdown from severity.txt
   - Adds statistics from event_counts.txt
+  - Added safety checks for missing prerequisite files
 """
 import os
 import shutil
@@ -19,19 +20,32 @@ OUT_COUNTS   = os.path.join(BASE_DIR, "output", "event_counts.txt")
 OUT_REPORT   = os.path.join(BASE_DIR, "output", "final_report.txt")
 ARCHIVE_DIR  = os.path.join(BASE_DIR, "output", "archive")
 
+# --- Check if prerequisite files exist ---
+required_files = [OUT_EVENTS, OUT_IOC, OUT_SEVERITY, OUT_COUNTS]
+missing_files = [f for f in required_files if not os.path.exists(f)]
+
+if missing_files:
+    print("[-] Error: Missing required output files from triage or severity analysis.")
+    print("    Please run triage.py and severity.py first.")
+    for mf in missing_files:
+        print(f"    - Missing: {os.path.basename(mf)}")
+    exit(1)
+
 # --- Backup previous report ---
 if os.path.exists(OUT_REPORT):
     os.makedirs(ARCHIVE_DIR, exist_ok=True)
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     shutil.copy(OUT_REPORT, os.path.join(ARCHIVE_DIR, f"final_report_{ts}.txt"))
-    print(f"    Previous report saved to output/archive/")
+    print("    Previous report saved to output/archive/")
 
 with open(OUT_EVENTS,   encoding="utf-8") as f: events_raw   = f.read()
 with open(OUT_IOC,      encoding="utf-8") as f: iocs         = f.read()
 with open(OUT_SEVERITY, encoding="utf-8") as f: severity_raw = f.read()
 with open(OUT_COUNTS,   encoding="utf-8") as f: counts       = f.read()
 
-severity_level = severity_raw.splitlines()[0].strip()
+# Safe severity level extraction
+severity_lines = severity_raw.splitlines()
+severity_level = severity_lines[0].strip() if severity_lines else "UNKNOWN"
 
 # --- Display events, truncate explicitly ---
 MAX_CHARS   = 3000
