@@ -2,7 +2,7 @@
 cd /d "%~dp0.."
 
 echo ===============================
-echo    SOC L1 Triage Assistant
+echo     SOC L1 Triage Assistant
 echo ===============================
 echo.
 
