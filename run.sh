@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # SOC L1 Triage Assistant — run.sh
 
 cd "$(dirname "$0")/.." || exit 1
