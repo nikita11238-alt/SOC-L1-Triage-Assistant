@@ -3,15 +3,21 @@
 ai_explainer.py
 Updates:
   - Disclaimer: this is NOT AI, but rule-based logic
-  - Prevents duplicate entries on consecutive runs (overwrites the section)
+  - Prevents duplicate entries on consecutive runs (safely replaces the section)
   - Expanded explanations for severity levels
+  - Added safety checks for missing files
+  - Removed unused imports
 """
 import os
-import re
 
 BASE_DIR     = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT_SEVERITY = os.path.join(BASE_DIR, "output", "severity.txt")
 OUT_REPORT   = os.path.join(BASE_DIR, "output", "final_report.txt")
+
+# --- Check if prerequisite files exist ---
+if not os.path.exists(OUT_SEVERITY) or not os.path.exists(OUT_REPORT):
+    print("[-] Error: Missing severity.txt or final_report.txt. Run previous steps first.")
+    exit(1)
 
 with open(OUT_SEVERITY, encoding="utf-8") as f:
     severity = f.readline().strip()
@@ -50,15 +56,14 @@ assessments = {
 
 text = assessments.get(severity, f"Unknown severity level: {severity}")
 
-# Read the report and replace the section if it already exists (prevents duplication)
+# Read the report and safely remove the old assessment section if it exists
 with open(OUT_REPORT, "r", encoding="utf-8") as f:
     report = f.read()
 
 SECTION_MARKER = "\n=== AUTOMATED ASSESSMENT ===\n"
 
-# Remove the old section if it exists
 if SECTION_MARKER in report:
-    report = report[:report.index(SECTION_MARKER)]
+    report = report.split(SECTION_MARKER)[0]
 
 report += SECTION_MARKER + text + "\n"
 
