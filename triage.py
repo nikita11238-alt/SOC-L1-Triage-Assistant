@@ -5,7 +5,7 @@ Updates:
   - Line-by-line streaming (does not load the entire file into RAM)
   - IP validation (filters out invalid IPs like 999.x.x.x)
   - Event deduplication (identical lines are counted, not duplicated)
-  - Encoding: tries UTF-8, falls back to latin-1
+  - Encoding: tries UTF-8, falls back to latin-1 (with safe descriptor closing)
   - Occurrence counter for each event
 """
 import os
@@ -21,7 +21,7 @@ OUT_COUNTS   = os.path.join(BASE_DIR, "output", "event_counts.txt")
 
 KEYWORDS     = ["failed", "invalid", "unauthorized", "sudo", "root", "denied"]
 IP_PATTERN   = re.compile(r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b')
-USER_PATTERN = re.compile(r'user[=:\s]+(\w+)', re.I)
+USER_PATTERN = re.compile(r'user[=:\s]+([\w\.-]+)', re.I)
 
 def is_valid_ip(ip_str):
     try:
@@ -31,13 +31,15 @@ def is_valid_ip(ip_str):
         return False
 
 def open_log(path):
-    """Try UTF-8 first, fall back to latin-1 on error."""
+    """Try UTF-8 first, fall back to latin-1 on error (with safe file closing)."""
     try:
         f = open(path, encoding="utf-8")
         f.read(1024)
         f.seek(0)
         return f
     except UnicodeDecodeError:
+        if 'f' in locals() and not f.closed:
+            f.close()
         return open(path, encoding="latin-1")
 
 os.makedirs(os.path.join(BASE_DIR, "output"), exist_ok=True)
