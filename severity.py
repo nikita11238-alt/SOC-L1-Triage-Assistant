@@ -2,13 +2,12 @@
 """
 severity.py — severity assessment
 Updates:
-  - Considers temporal patterns (burst vs slow enumeration)
-  - Considers context: system-level failed != auth failed
-  - Expanded scoring rules
+  - Single-pass line processing (accurate counts without overlapping subtraction bugs)
+  - Fixed threshold reporting strings
+  - Clean and robust event categorization
 """
 import os
 import re
-from collections import Counter
 
 BASE_DIR     = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT_EVENTS   = os.path.join(BASE_DIR, "output", "events.txt")
@@ -17,29 +16,44 @@ OUT_SEVERITY = os.path.join(BASE_DIR, "output", "severity.txt")
 with open(OUT_EVENTS, encoding="utf-8") as f:
     raw = f.read()
 
-lines = raw.splitlines()
-events_lower = raw.lower()
+auth_failed   = 0
+invalid_user  = 0
+sudo_attempts = 0
+root_attempts = 0
+unauthorized  = 0
+denied        = 0
+system_failed = 0
 
-# --- Extract repeat counters from [xN] format ---
-def total_occurrences(pattern, text):
-    """Counts occurrences taking [xN] prefixes into account."""
-    count = 0
-    for line in text.splitlines():
-        m = re.match(r'\[x(\d+)\]', line)
-        multiplier = int(m.group(1)) if m else 1
-        if pattern in line.lower():
-            count += multiplier
-    return count
+# --- Single pass parsing to avoid overlapping subtraction bugs ---
+for line in raw.splitlines():
+    m = re.match(r'\[x(\d+)\]\s*(.*)', line)
+    if m:
+        count = int(m.group(1))
+        content = m.group(2).lower()
+    else:
+        count = 1
+        content = line.lower()
 
-auth_failed    = total_occurrences("failed password", raw)
-invalid_user   = total_occurrences("invalid user", raw)
-sudo_attempts  = total_occurrences("sudo", raw)
-root_attempts  = total_occurrences("for root", raw)
-unauthorized   = total_occurrences("unauthorized", raw)
-denied         = total_occurrences("denied", raw)
+    is_auth = "failed password" in content
+    is_inv  = "invalid user" in content
 
-# System-level failed (non-auth) — low weight
-system_failed  = total_occurrences("failed", raw) - auth_failed - invalid_user
+    if is_auth:
+        auth_failed += count
+    if is_inv:
+        invalid_user += count
+    
+    # System-level failed (contains 'failed' but is not an auth password failure)
+    if "failed" in content and not is_auth:
+        system_failed += count
+
+    if "sudo" in content:
+        sudo_attempts += count
+    if "for root" in content:
+        root_attempts += count
+    if "unauthorized" in content:
+        unauthorized += count
+    if "denied" in content:
+        denied += count
 
 score = 0
 reasons = []
@@ -50,7 +64,7 @@ if auth_failed > 0:
     reasons.append(f"Auth failures: {auth_failed}")
 if auth_failed > 10:
     score += 2
-    reasons.append(f"High volume auth failures (>{auth_failed})")
+    reasons.append("High volume auth failures (>10)")
 if auth_failed > 100:
     score += 2
     reasons.append("Possible brute-force (>100 failures)")
@@ -61,7 +75,7 @@ if invalid_user > 0:
     reasons.append(f"Invalid user attempts: {invalid_user}")
 if invalid_user > 5:
     score += 1
-    reasons.append("Multiple different invalid usernames")
+    reasons.append("Multiple different invalid usernames (>5)")
 
 # Privileges
 if root_attempts > 0:
